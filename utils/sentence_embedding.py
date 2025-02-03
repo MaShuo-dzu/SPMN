@@ -2,6 +2,7 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def mean_pooling(model_output, attention_mask):
     token_embeddings = model_output[0]
@@ -11,12 +12,12 @@ def mean_pooling(model_output, attention_mask):
 
 # Load model from HuggingFace Hub
 tokenizer = AutoTokenizer.from_pretrained(r'E:\pythonProject\SPMN\all-MiniLM-L6-v2')
-model = AutoModel.from_pretrained(r'E:\pythonProject\SPMN\all-MiniLM-L6-v2')
+model = AutoModel.from_pretrained(r'E:\pythonProject\SPMN\all-MiniLM-L6-v2').to(device)
 
 
 def sentence_embedding(sentences: list):
     # Tokenize sentences
-    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
+    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt').to(device)
 
     # Compute token embeddings
     with torch.no_grad():

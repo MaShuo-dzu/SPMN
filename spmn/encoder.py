@@ -39,98 +39,28 @@ class ImgEncoder(nn.Module):
 
 
 class TextEncoder(nn.Module):
-    def __init__(self, seq_len: int, memory_width: int):
-        super(TextEncoder, self).__init__()
+    def __init__(self,
+                 input_dim: int,
+                 memory_width: int,
+                 bottleneck: int = 64
+                 ):
+        super().__init__()
 
-        self.memory_width = memory_width
-        self.seq_len = seq_len
-
-        assert seq_len >= 16, "seq_len 必须>= 16 ！"
-
-        self.p_l = nn.Parameter(torch.randn(seq_len, 1, memory_width // 8))
-        self.p_r = nn.Parameter(torch.randn(seq_len, 1, memory_width // 8))
-
-        # memory_width / 8 -> memory_width
-        routing_function_11 = RountingFunction(in_channels=seq_len, kernel_number=4)
-        routing_function_12 = RountingFunction(in_channels=seq_len // 2,
-                                                       kernel_number=4)
-        routing_function_21 = RountingFunction(in_channels=seq_len // 2, kernel_number=4)
-        routing_function_22 = RountingFunction(in_channels=seq_len // 4,
-                                                       kernel_number=4)
-        routing_function_31 = RountingFunction(in_channels=seq_len // 4, kernel_number=4)
-        routing_function_32 = RountingFunction(in_channels=seq_len // 8,
-                                                       kernel_number=4)
-
-        self.conv_layers = nn.Sequential(
-            AdaptiveRotatedConv2d(in_channels=seq_len,
-                                  out_channels=seq_len // 2,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_11, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len // 2),
-            nn.ReLU(),
-            AdaptiveRotatedConv2d(in_channels=seq_len // 2,
-                                  out_channels=seq_len,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_12, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(seq_len, seq_len // 2, kernel_size=2, stride=2),
-            nn.BatchNorm2d(seq_len // 2),
-            nn.ReLU(),
-
-            AdaptiveRotatedConv2d(in_channels=seq_len // 2,
-                                  out_channels=seq_len // 4,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_21, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len // 4),
-            nn.ReLU(),
-            AdaptiveRotatedConv2d(in_channels=seq_len // 4,
-                                  out_channels=seq_len // 2,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_22, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len // 2),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(seq_len // 2, seq_len // 4, kernel_size=2, stride=2),
-            nn.BatchNorm2d(seq_len // 4),
-            nn.ReLU(),
-
-            AdaptiveRotatedConv2d(in_channels=seq_len // 4,
-                                  out_channels=seq_len // 8,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_31, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len // 8),
-            nn.ReLU(),
-            AdaptiveRotatedConv2d(in_channels=seq_len // 8,
-                                  out_channels=seq_len // 4,
-                                  kernel_size=3, padding=1, rounting_func=routing_function_32, bias=True,
-                                  kernel_number=4),
-            nn.BatchNorm2d(seq_len // 4),
-            nn.ReLU(),
-
-            nn.ConvTranspose2d(seq_len // 4, seq_len // 8, kernel_size=2, stride=2),
-            nn.BatchNorm2d(seq_len // 8),
-            nn.ReLU(),
-
-            nn.Conv2d(seq_len // 8, 1, kernel_size=1),
-            nn.BatchNorm2d(1),
-            nn.ReLU()
+        self.fc1 = nn.Sequential(
+            nn.Linear(input_dim, bottleneck),
+            nn.GELU(),
+            nn.Linear(bottleneck, memory_width)
+        )
+        self.fc2 = nn.Sequential(
+            nn.Linear(input_dim, bottleneck),
+            nn.GELU(),
+            nn.Linear(bottleneck, memory_width)
         )
 
     def forward(self, x):
-        """
+        x1 = self.fc1(x).unsqueeze(dim=-1)  # [bs, memory_width, 1]
+        x2 = self.fc2(x).unsqueeze(dim=-1)  # [bs, memory_width, 1]
 
-        :param x: [batch_size, seq_len, hidden_dim]
-        :return:  [batch_size, 1, memory_width, memory_width]
-        """
-
-        batch_size = x.shape[0]
-        x_l = torch.matmul(x.unsqueeze(-1), self.p_l.unsqueeze(0).expand(batch_size, -1, -1, -1))  # [batch_size, seq_len, hidden_dim, memory_width // 8]
-        x_r = torch.matmul(x.unsqueeze(-1), self.p_r.unsqueeze(0).expand(batch_size, -1, -1, -1))  # [batch_size, seq_len, hidden_dim, memory_width // 8]
-
-        x = torch.matmul(torch.transpose(x_l, -2, -1), x_r)  # [batch_size, seq_len, memory_width // 8, memory_width // 8]
-
-        x = self.conv_layers(x)  # 卷积调整尺寸
+        x = torch.bmm(x1, torch.transpose(x2, -2, -1)).unsqueeze(dim=1)  # [bs, 1, memory_width, memory_width]
 
         return x
