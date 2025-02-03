@@ -1,7 +1,7 @@
 import torch
 
 from spmn.spmn import Spmn
-from tools import calculate_stats, count_parameters
+from utils.tools import calculate_stats, count_parameters
 
 import time
 

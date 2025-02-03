@@ -12,10 +12,10 @@ from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from embedding import embedding_text_512_77
+from utils.word_embedding import embedding_text_512_77
 from spmn.spmn import Spmn
-from tools import count_parameters, save_arg
-from utils.dataloader import CSVTextCosineSimilarityDataset, TextDataset
+from utils.tools import count_parameters, save_arg
+from utils.dataloader import TextDataset
 from utils.loss import SPMNWriteLoss
 
 

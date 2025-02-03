@@ -1,18 +1,18 @@
 import torch
 
-input = torch.tensor([
-        [2, 3],
-        [1, 7],
-        [4, 5]
-])
-print(input.shape)
+from spmn.recall import Recall
 
-w = torch.tensor([
-        [2, 3],
-        [1, 2]
-])
+memory_width = 64
+memory_deep = 16
+recall_num = 500
+output_dim = 2048
 
-o = input @ w
-o_T = input @ w.T
-print(o)
-print(o_T)
+model = Recall(memory_width=memory_width, memory_deep=memory_deep, recall_num=recall_num, output_dim=output_dim)
+
+batch_size = 2
+x = torch.randn(batch_size, memory_deep, memory_width, memory_width)   # (batch_size, in_channel, memory_width, memory_width)
+
+output = model(x)
+
+print(f"Input shape: {x.shape}")
+print(f"Output shape: {output.shape}")

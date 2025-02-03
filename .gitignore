@@ -169,3 +169,20 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/clip-vit-base/
+/bge-small-zh/
+/MobileLLM-125M/
+/sentence-similarity/
+/gte-base-zh/
+/dataset/4.csv
+/dataset/4.txt
+/dataset/6.csv
+/dataset/6.txt
+/dataset/corpus.txt
+/dataset/corpus_clean.txt
+/dataset/data_clean.py
+/dataset/make_csv.py
+/dataset/txt_csv.py
+/dataset/word.csv
+/all-MiniLM-L6-v2/
+/all-MiniLM-L6-v2/
