@@ -1,3 +1,4 @@
+import numpy as np
 from torch import Tensor
 
 
@@ -13,6 +14,7 @@ class AgentTrainData:
 
 
 if __name__ == '__main__':
+    # write
     data_list = []
     data1 = AgentTrainData("hello", Tensor([[200, 100, 300]]), [])
     # print(data1.embedding.shape)
@@ -20,3 +22,9 @@ if __name__ == '__main__':
 
     data_list.append(data1)
     data_list.append(data2)
+
+    np.save("test.npy", data_list)
+
+    # read
+    loaded_array = np.load("test.npy", allow_pickle=True)
+    print(loaded_array[0].embedding)

@@ -35,5 +35,10 @@ class SPMNWriteLoss(torch.nn.Module):
         return loss
 
 
-class AgentTrainLoss:
-    pass
+class AgentTrainLoss(torch.nn.Module):
+    def __init__(self):
+        super(AgentTrainLoss, self).__init__()
+
+    def forward(self):
+
+

@@ -29,16 +29,14 @@ class AgentTrain(object):
         self.memory_deep = 10
         self.input_dim = 384
 
+        self.conf_threshold = 0.5
+
         self.epochs = 100
         self.work_dir = r"AgentTrain-run"
         self.batch_size = 16
         self.lr = 0.0005
 
-        self.shuffle = True
-
-        # test change: 1 /
-        self.pretrain_pth_path = r""
-        # self.pretrain_pth_path = r"run/weights/best.pth"
+        self.shuffle = False
 
         if not os.path.exists(self.work_dir):
             os.mkdir(self.work_dir)
@@ -46,7 +44,7 @@ class AgentTrain(object):
         if not os.path.exists(os.path.join(self.work_dir, "weights")):
             os.mkdir(os.path.join(self.work_dir, "weights"))
 
-        npz_file = r"G:\ms\SPMN\dataset\corpus_clean.txt"
+        npz_dir = r"G:\ms\SPMN\dataset\corpus_clean.txt"
 
         # 配置gpu
         use_cuda = torch.cuda.is_available()
@@ -61,12 +59,9 @@ class AgentTrain(object):
         构造DataLoader
         '''
         train_kwargs = {'num_workers': 0, 'pin_memory': True} if use_cuda else {}
-        '''pin_memory就是锁页内存，创建DataLoader时，设置pin_memory = True，
-        则意味着生成的Tensor数据最开始是属于内存中的锁页内存，
-        这样将内存的Tensor转义到GPU的显存就会更快一些。'''
 
         # 初始化数据集
-        dataset = AgentTrainDataset(npz_file)
+        dataset = AgentTrainDataset(npz_dir)
 
         # 加载训练集和验证集
         self.dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=self.shuffle, **train_kwargs)
@@ -81,19 +76,12 @@ class AgentTrain(object):
         # 制作训练集批次
         self.batch_num = len(self.dataloader)
 
-        # test change: 2 /
-        # self.train_batch_num = round(self.batch_num * 0)
         self.train_batch_num = round(self.batch_num * 0.8)
 
         # 使用gpu进行多卡训练
         if use_cuda:
             self.model = torch.nn.DataParallel(self.model, device_ids=range(torch.cuda.device_count()))
             cudnn.benchmark = True
-
-        # 加载预训练模型
-        if self.pretrain_pth_path != "":
-            print(torch.load(self.pretrain_pth_path).keys())
-            self.model.load_state_dict(torch.load(self.pretrain_pth_path))
 
         '''
         构造loss目标函数
