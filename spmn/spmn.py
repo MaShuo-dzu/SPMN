@@ -7,7 +7,7 @@ from spmn.recall import Recall
 
 
 class Spmn(nn.Module):
-    def __init__(self, memory_width: int, memory_deep: int, input_dim: int = 2048, recall_num: int = 500, output_dim: int = 2048):
+    def __init__(self, memory_width: int, memory_deep: int, input_dim: int = 2048, recall_num: int = 500, output_dim: int = 384):
         super(Spmn, self).__init__()
 
         self.recall_num = recall_num
@@ -26,6 +26,9 @@ class Spmn(nn.Module):
 
     def init_M(self):
         return torch.zeros(self.memory_deep,self. memory_width, self.memory_width)
+
+    def reset_M(self):
+        self.M = torch.zeros(self.memory_deep,self. memory_width, self.memory_width)
 
     def get_M(self):
         return self.M

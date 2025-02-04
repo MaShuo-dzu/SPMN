@@ -33,3 +33,7 @@ class SPMNWriteLoss(torch.nn.Module):
         loss = torch.mean((similarity_ratios - 1) ** 2 / 2)
 
         return loss
+
+
+class AgentTrainLoss:
+    pass

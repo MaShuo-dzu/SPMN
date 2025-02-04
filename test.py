@@ -1,18 +1,8 @@
-import torch
+import numpy as np
 
-from spmn.recall import Recall
+data = np.load(r"E:\pythonProject\SPMN\dataset\sentences_with_embeddings.npz", allow_pickle=True)
+loaded_sentences = data['sentences']
+loaded_embeddings = data['embeddings']
 
-memory_width = 64
-memory_deep = 16
-recall_num = 500
-output_dim = 2048
-
-model = Recall(memory_width=memory_width, memory_deep=memory_deep, recall_num=recall_num, output_dim=output_dim)
-
-batch_size = 2
-x = torch.randn(batch_size, memory_deep, memory_width, memory_width)   # (batch_size, in_channel, memory_width, memory_width)
-
-output = model(x)
-
-print(f"Input shape: {x.shape}")
-print(f"Output shape: {output.shape}")
+print(loaded_sentences[:5])
+print(loaded_embeddings[:5])

@@ -186,3 +186,4 @@ cython_debug/
 /dataset/word.csv
 /all-MiniLM-L6-v2/
 /all-MiniLM-L6-v2/
+/dataset/sentences_with_embeddings.npz

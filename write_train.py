@@ -19,13 +19,12 @@ from utils.dataloader import TextDataset
 from utils.loss import SPMNWriteLoss
 
 
-class MsTrain(object):
-    def __init__(self, memory_width=256, memory_deep=10,
-                 seq_len=36):
+class WriteTrain(object):
+    def __init__(self):
 
-        self.memory_width = memory_width
-        self.memory_deep = memory_deep
-        self.seq_len = seq_len
+        self.memory_width = 256
+        self.memory_deep = 10
+        self.seq_len = 36
 
         self.epochs = 1
         self.work_dir = r"run"
@@ -275,4 +274,4 @@ class MsTrain(object):
 
 
 if __name__ == "__main__":
-    begin = MsTrain()
+    begin = WriteTrain()

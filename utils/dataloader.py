@@ -58,3 +58,7 @@ class TextDataset(Dataset):
         :return: 索引idx处的句子
         """
         return self.sentences[idx]
+
+
+class AgentTrainDataset:
+    pass

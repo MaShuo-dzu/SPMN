@@ -1,4 +1,5 @@
 from torch import nn
+import torch.nn.functional as F
 
 
 class Recall(nn.Module):
@@ -55,5 +56,8 @@ class Recall(nn.Module):
         x = x.view(bs, self.out_channel, -1)
 
         x = self.head(x)
+
+        x[:, :, 0] = F.sigmoid(x[:, :, 0])  # p
+        x[:, :, 1] = F.sigmoid(x[:, :, 1])  # c
 
         return x
