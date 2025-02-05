@@ -26,11 +26,12 @@ if __name__ == '__main__':
     # write
     data_list = []
     data1 = NpzData("hello", Tensor([[200, 100, 300]]), [])
-    # print(data1.embedding.shape)
     data2 = NpzData("world", Tensor([[100, 150, 250]]), [0.3])
+    data3 = NpzData("!", Tensor([[150, 150, -250]]), [0.3, 0.2])
 
     data_list.append(data1)
     data_list.append(data2)
+    data_list.append(data3)
 
     np.save("test.npy", data_list)
 

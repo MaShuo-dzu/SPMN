@@ -3,8 +3,12 @@ import glob
 import os
 
 import numpy as np
+import torch
+from torch import Tensor
 from torch.utils.data import Dataset
 from tqdm import tqdm
+
+from utils.data import AgentTrainIter
 
 
 class CSVTextCosineSimilarityDataset(Dataset):
@@ -85,8 +89,22 @@ class AgentTrainDataset(Dataset):
             count += file_data.size
 
             iter_list = []
-            for each_iter in file_data:
+            for each_iter in file_data:  # NpzData
+                memory_number = len(each_iter.similarity)
+                linear_sequence = torch.linspace(0, 1, steps=memory_number)
 
+                c_pass = each_iter.similarity > memory_threshold
+                similarity: Tensor = each_iter.similarity[c_pass]  # [real_num]
+
+                index: Tensor = each_iter.index[c_pass]  # [real_num]
+                embeddings: Tensor = dict_embeddings[index]  # [real_num, data_dim]
+
+                p: Tensor = linear_sequence[c_pass]  # [real_num]
+
+                train_iter = AgentTrainIter(dict_embeddings[each_iter.sentence], torch.cat((p.unsqueeze(-1), similarity.unsqueeze(-1), embeddings), dim=1))
+                iter_list.append(train_iter)
+
+            self.scene.append(iter_list)
 
         print(f"[AgentTrainDataset] 加载数据样本（iter）{count}条")
 
