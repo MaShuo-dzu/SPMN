@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 
+from utils.match import hungarian_matching
+
 
 class SPMNWriteLoss(torch.nn.Module):
     def __init__(self):
@@ -36,9 +38,43 @@ class SPMNWriteLoss(torch.nn.Module):
 
 
 class AgentTrainLoss(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, p_rate: float = 0.7, c_rate: float = 0.3, d_rate: float = 1):
         super(AgentTrainLoss, self).__init__()
 
-    def forward(self):
+        self.p_rate = p_rate
+        self.c_rate = c_rate
+        self.d_rate = d_rate
 
+    def forward(self, output: list, target):
+        """
+
+        :param output: [[search_num, output_dim]...]  len = bs 根据conf阈值筛选之后的输出
+        :param target: [[real_num, output_dim]...] len = bs
+        :return:
+        """
+        bs = len(output)
+
+        loss_list = []
+        for each_bs in range(bs):
+            o = output[each_bs]  # [search_num, output_dim]
+            t = target[each_bs]  # [real_num, output_dim]
+
+            # 匹配
+            pred_indices, true_indices = hungarian_matching(o, t)
+            pred = output[pred_indices]
+            true = target[true_indices]
+
+            # 时间损失 (p)
+            loss_t = F.smooth_l1_loss(pred[:, 0], true[:, 0], reduction='mean', beta=1.0)
+            # 置信度损失
+            loss_c = F.smooth_l1_loss(pred[:, 1], true[:, 1], reduction='mean', beta=1.0)
+            # 内容损失 (data + conf)
+            loss_data = F.cosine_similarity(pred[:, 2:], true[:, 2:], dim=1)  # dim=1 表示沿着向量的维度计算
+            loss_data = torch.sum(loss_data)
+
+            loss_list.append(loss_t.item() * self.p_rate + loss_c.item() * self.c_rate + loss_data.item() * self.d_rate)
+
+        loss = sum(loss_list) / len(loss_list)
+
+        return loss
 

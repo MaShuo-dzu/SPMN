@@ -46,6 +46,11 @@ class Recall(nn.Module):
         )
 
     def forward(self, x):
+        """
+
+        :param x: [batch_size, memory_deep£¬ memory_width£¬ memory_width]
+        :return: [batch_size£¬ recall_num£¬ 2 + output_dim]
+        """
         bs = x.shape[0]
 
         x = self.block_1(x)

@@ -12,11 +12,8 @@ def compute_cosine_similarity_matrix(compute_vector, vectors):
 
 if __name__ == "__main__":
     compute_vector = torch.tensor([1.0, 2.0, 3.0])
-    vectors = torch.tensor([
-        [4.0, 5.0, 6.0],
-        [7.0, 8.0, 9.0],
-        [1.0, 1.0, 1.0]
-    ])
+    vectors = torch.tensor(
+        [3.0, -20.0, 1.0])
 
     similarity_vector = compute_cosine_similarity_matrix(compute_vector, vectors)
 
