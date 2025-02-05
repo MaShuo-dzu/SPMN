@@ -1,5 +1,10 @@
 import csv
+import glob
+import os
+
+import numpy as np
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 class CSVTextCosineSimilarityDataset(Dataset):
@@ -60,5 +65,34 @@ class TextDataset(Dataset):
         return self.sentences[idx]
 
 
-class AgentTrainDataset:
-    pass
+class AgentTrainDataset(Dataset):
+    def __init__(self, npz_dir: str, dict_file_path: str, memory_threshold: float = 0.5):
+        assert os.path.isdir(npz_dir), f"[AgentTrainDataset error] 文件夹不存在：{npz_dir}"
+        assert os.path.isfile(dict_file_path), f"[AgentTrainDataset error] 文件不存在：{dict_file_path}"
+
+        # dict
+        dict_data = np.load(dict_file_path, allow_pickle=True)
+        dict_sentences = dict_data['sentences']
+        dict_embeddings = dict_data['embeddings']
+
+        npz_list = glob.glob(os.path.join(npz_dir, '*.npz'))
+        print(f"[AgentTrainDataset] npz 数量：{len(npz_list)}")
+
+        self.scene = []
+        count = 0
+        for each_npz in tqdm(npz_list, desc="[AgentTrainDataset] loading npz ..."):
+            file_data = np.load(each_npz, allow_pickle=True)
+            count += file_data.size
+
+            iter_list = []
+            for each_iter in file_data:
+
+
+        print(f"[AgentTrainDataset] 加载数据样本（iter）{count}条")
+
+    def __len__(self):
+        return len(self.scene)
+
+    def __getitem__(self, idx):
+        return self.scene[idx]
+

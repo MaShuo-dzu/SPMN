@@ -1,8 +1,22 @@
-import numpy as np
+import torch
 
-data = np.load(r"E:\pythonProject\SPMN\dataset\sentences_with_embeddings.npz", allow_pickle=True)
-loaded_sentences = data['sentences']
-loaded_embeddings = data['embeddings']
+from utils.loss import AgentTrainLoss
 
-print(loaded_sentences[:5])
-print(loaded_embeddings[:5])
+loss_fn = AgentTrainLoss(p_rate=0.7, c_rate=0.3, d_rate=1.0)
+
+batch_size = 2
+output_dim = 5
+max_search_num = 10
+max_real_num = 8
+
+output = [
+    torch.rand(torch.randint(1, max_search_num, (1,)).item(), output_dim)
+    for _ in range(batch_size)
+]
+target = [
+    torch.rand(torch.randint(1, max_real_num, (1,)).item(), output_dim)
+    for _ in range(batch_size)
+]
+
+loss = loss_fn(output, target)
+print(f"Loss: {loss}")

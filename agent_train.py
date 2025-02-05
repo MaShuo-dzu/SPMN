@@ -119,7 +119,7 @@ class AgentTrain(object):
                 "batch-size": self.batch_size,
                 "optimizer": str(self.optimizer),
                 "gpus": torch.cuda.device_count(),
-                "data-file": npz_file,
+                "data-file": npz_dir,
                 "work-dir": self.work_dir,
                 "model_params": count_parameters(self.model),
                 "other-arg":
