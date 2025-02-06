@@ -36,6 +36,6 @@ if __name__ == '__main__':
     # np.save("test.npy", data_list)
 
     # read
-    loaded_array = np.load(r"E:\pythonProject\SPMN\dataset\sentence\100\0.npy", allow_pickle=True)
+    loaded_array = np.load(r"E:\pythonProject\SPMN\dataset\sentence\100\1.npy", allow_pickle=True)
     for i in loaded_array:
-        print(i)
+        print(i.index)
