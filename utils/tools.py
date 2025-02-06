@@ -63,3 +63,12 @@ def calculate_stats(tensor):
     variance = torch.var(tensor)
 
     return max_value, min_value, mean_value, variance
+
+
+def make_workdir(work_dir: str):
+    if not os.path.exists(work_dir):
+        os.makedirs(work_dir)
+
+        return work_dir
+
+    return make_workdir(work_dir + "n")

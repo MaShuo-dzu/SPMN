@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import csv
 import os
 import time
@@ -7,15 +9,15 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 from matplotlib import pyplot as plt
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from spmn.spmn import Spmn
-from utils.tools import count_parameters, save_arg
+from utils.tools import count_parameters, save_arg, make_workdir
 from utils.dataloader import AgentTrainDataset
 from utils.loss import AgentTrainLoss
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
+torch.autograd.set_detect_anomaly(True)
 
 
 class AgentTrain(object):
@@ -31,68 +33,57 @@ class AgentTrain(object):
         self.work_dir = r"AgentTrain-run"
         self.lr = 0.0005
 
-        self.shuffle = False
-
-        if not os.path.exists(self.work_dir):
-            os.mkdir(self.work_dir)
+        self.work_dir = make_workdir(self.work_dir)
 
         if not os.path.exists(os.path.join(self.work_dir, "weights")):
             os.mkdir(os.path.join(self.work_dir, "weights"))
 
         npz_dir = r"./dataset/sentence/100"
 
-        # ÅäÖÃGPU
+        # é…ç½®GPU
         use_cuda = torch.cuda.is_available()
         if use_cuda:
-            torch.cuda.manual_seed(123)  # Îªµ±Ç°GPUÉèÖÃËæ»úÖÖ×Ó
+            torch.cuda.manual_seed(123)  # ä¸ºå½“å‰GPUè®¾ç½®éšæœºç§å­
         else:
-            torch.manual_seed(123)  # ÎªCPUÉèÖÃÖÖ×ÓÓÃÓÚÉú³ÉËæ»úÊı£¬ÒÔÊ¹µÃ½á¹ûÊÇÈ·¶¨µÄ
+            torch.manual_seed(123)  # ä¸ºCPUè®¾ç½®ç§å­ç”¨äºç”Ÿæˆéšæœºæ•°ï¼Œä»¥ä½¿å¾—ç»“æœæ˜¯ç¡®å®šçš„
 
         self.device = torch.device("cuda" if use_cuda else "cpu")
 
-        '''
-        ¹¹ÔìDataLoader
-        '''
-        train_kwargs = {'num_workers': 0, 'pin_memory': True} if use_cuda else {}
+        # åˆå§‹åŒ–æ•°æ®é›†
+        self.dataset = AgentTrainDataset(npz_dir, r"./dataset\sentences_with_embeddings.npz")
 
-        # ³õÊ¼»¯Êı¾İ¼¯
-        dataset = AgentTrainDataset(npz_dir, r"./dataset\sentences_with_embeddings.npz")
-
-        # ¼ÓÔØÑµÁ·¼¯ºÍÑéÖ¤¼¯
-        self.dataloader = DataLoader(dataset, batch_size=1, shuffle=self.shuffle, **train_kwargs)
-
-        # Ñ¡ÔñÄ£ĞÍ
+        # é€‰æ‹©æ¨¡å‹
         self.model = Spmn(memory_width=self.memory_width, memory_deep=self.memory_deep,
                           input_dim=self.input_dim,
                           output_dim=self.input_dim
                           ).to(device=self.device)
         print(self.model)
-        print("Ä£ĞÍ²ÎÊıÁ¿/ÑµÁ·²ÎÊıÁ¿£º ", count_parameters(self.model))
+        print("æ¨¡å‹å‚æ•°é‡/è®­ç»ƒå‚æ•°é‡ï¼š ", count_parameters(self.model))
 
-        # ÖÆ×÷ÑµÁ·¼¯Åú´Î
-        self.batch_num = len(self.dataloader)
+        # åˆ¶ä½œè®­ç»ƒé›†æ‰¹æ¬¡
+        self.batch_num = len(self.dataset)
 
         self.train_batch_num = round(self.batch_num * 0.8)
 
-        # Ê¹ÓÃgpu½øĞĞ¶à¿¨ÑµÁ·
+        # ä½¿ç”¨gpuè¿›è¡Œå¤šå¡è®­ç»ƒ
         if use_cuda:
             self.model = torch.nn.DataParallel(self.model, device_ids=range(torch.cuda.device_count()))
             cudnn.benchmark = True
 
         '''
-        ¹¹ÔìlossÄ¿±êº¯Êı
-        Ñ¡ÔñÓÅ»¯Æ÷
-        Ñ§Ï°ÂÊ±ä»¯Ñ¡Ôñ
+        æ„é€ lossç›®æ ‡å‡½æ•°
+        é€‰æ‹©ä¼˜åŒ–å™¨
+        å­¦ä¹ ç‡å˜åŒ–é€‰æ‹©
         '''
-        # ½»²æìØËğÊ§
+        # äº¤å‰ç†µæŸå¤±
         self.criterion = AgentTrainLoss()
-        # Ëæ»úÌİ¶ÈÏÂ½µ
+        # éšæœºæ¢¯åº¦ä¸‹é™
         self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr)
-        # Ñ§Ï°ÂÊÓàÏÒ±ä»¯
+        # å­¦ä¹ ç‡ä½™å¼¦å˜åŒ–
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer,
                                                                     T_max=self.epochs, eta_min=1e-5)
 
-        # È«¾Ö²ÎÊı
+        # å…¨å±€å‚æ•°
         self.train_all_batch_loss = []
         self.val_all_batch_loss = []
 
@@ -118,50 +109,48 @@ class AgentTrain(object):
                 "data-file": npz_dir,
                 "work-dir": self.work_dir,
                 "model_params": count_parameters(self.model),
-                "other-arg":
-                    {
-                        "shuffle": self.shuffle
-                    }
             },
             self.work_dir
         )
 
-        # ÑµÁ·
-        print("¿ªÊ¼ÑµÁ·")
-        try:
-            for epoch in range(1, self.epochs + 1):
-                self.train(epoch)
-        except Exception as e:
-            print(f"ÑµÁ·¹ı³ÌÖĞ·¢Éú´íÎó£º{e}")
-        finally:
-            # Çå¿ÕÊ¹ÓÃ¹ıµÄgpu»º³åÇø
-            torch.cuda.empty_cache()
-
-            # »­Í¼
-            self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
-                             y=self.train_epochs_loss, type="Train")
-            self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
-                             y=self.val_epochs_loss, type="Val")
-            self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
-                             y=self.train_all_batch_loss, type="Train")
-            self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
-                             y=self.val_all_batch_loss, type="Val")
-            self.plot_losses(x=len(self.lr_schedular), x_label="steps",
-                             y=self.lr_schedular, type="lr")
-
-        print("ÑµÁ·Íê³É!")
+        # è®­ç»ƒ
+        print("å¼€å§‹è®­ç»ƒ")
+        # try:
+        for epoch in range(1, self.epochs + 1):
+            self.train(epoch)
+        # except Exception as e:
+        #     print(f"è®­ç»ƒè¿‡ç¨‹ä¸­å‘ç”Ÿé”™è¯¯ï¼š{e}")
+        # finally:
+        #     # æ¸…ç©ºä½¿ç”¨è¿‡çš„gpuç¼“å†²åŒº
+        #     torch.cuda.empty_cache()
+        #
+        #     # ç”»å›¾
+        #     self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
+        #                      y=self.train_epochs_loss, type="Train")
+        #     self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
+        #                      y=self.val_epochs_loss, type="Val")
+        #     self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
+        #                      y=self.train_all_batch_loss, type="Train")
+        #     self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
+        #                      y=self.val_all_batch_loss, type="Val")
+        #     self.plot_losses(x=len(self.lr_schedular), x_label="steps",
+        #                      y=self.lr_schedular, type="lr")
+        #
+        # print("è®­ç»ƒå®Œæˆ!")
 
     def train(self, epoch):
         train_loss = []
         val_loss = []
 
-        # µü´úÆ÷
-        pbar = tqdm(self.dataloader,
+        # è¿­ä»£å™¨
+        pbar = tqdm([i for i in self.dataset],
                     desc=f'Epoch {epoch} / {self.epochs}')
 
         for step, scene in enumerate(pbar):
-            print(scene.shape)
-            self.model.module.reset_M()
+            try:
+                self.model.reset_M()
+            except:  # ddp
+                self.model.module.reset_M()
 
             for train_iter in scene:
                 embedding = train_iter.embedding
@@ -170,7 +159,7 @@ class AgentTrain(object):
                 if step < self.train_batch_num:
                     # train
                     self.model.train()
-                    self.optimizer.zero_grad()  # Ä£ĞÍ²ÎÊıÌİ¶ÈÇåÁã
+                    self.optimizer.zero_grad()  # æ¨¡å‹å‚æ•°æ¢¯åº¦æ¸…é›¶
 
                     output = self.model(embedding)
                     loss = self.criterion(output, target)
@@ -180,7 +169,7 @@ class AgentTrain(object):
                     train_loss.append(loss.item())
                     self.train_all_batch_loss.append(loss.item())
 
-                    # µ÷Õû²ÎÊı
+                    # è°ƒæ•´å‚æ•°
                     self.optimizer.step()
 
                     pbar.set_description(
@@ -206,22 +195,22 @@ class AgentTrain(object):
                     pbar.set_description(
                         f'Val Epoch:{epoch}/{self.epochs} val_loss:{round(loss.item(), 4)}')
 
-        # µ÷ÕûÑ§Ï°ÂÊ
+        # è°ƒæ•´å­¦ä¹ ç‡
         self.lr_schedular.append(self.optimizer.param_groups[0]['lr'])
         self.scheduler.step()
 
-        # ¸üĞÂÈ«¾ÖËğÊ§
+        # æ›´æ–°å…¨å±€æŸå¤±
         self.train_epochs_loss.append(np.mean(train_loss))
         self.val_epochs_loss.append(np.mean(val_loss))
 
-        # ±£´æÄ£ĞÍ²ÎÊı
+        # ä¿å­˜æ¨¡å‹å‚æ•°
         torch.save(self.model.state_dict(),
                    os.path.join(self.work_dir, "weights" + f'/Epoch-{epoch}.pth')
                    )
 
     def plot_losses(self, x: int, x_label: str, y: list, type: str):
-        # »æÖÆÑµÁ·ºÍÑéÖ¤ËğÊ§ÇúÏß
-        _x = range(1, x + 1)  # epoch ·¶Î§
+        # ç»˜åˆ¶è®­ç»ƒå’ŒéªŒè¯æŸå¤±æ›²çº¿
+        _x = range(1, x + 1)  # epoch èŒƒå›´
         plt.plot(_x, y, label=type + ' Loss')
 
         plt.xlabel(x_label)
@@ -230,21 +219,21 @@ class AgentTrain(object):
         plt.legend()
         plt.grid(True)
 
-        # ×Ô¶¯±£´æÍ¼Ïñ
+        # è‡ªåŠ¨ä¿å­˜å›¾åƒ
         plt.savefig(os.path.join(self.work_dir, f"{type + '_' + x_label}_loss.png"), format='png', dpi=300)
 
-        # ÏÔÊ¾Í¼Ïñ
+        # æ˜¾ç¤ºå›¾åƒ
         plt.show()
-        plt.close()  # ¹Ø±ÕÍ¼Ïñ£¬ÊÍ·ÅÄÚ´æ
+        plt.close()  # å…³é—­å›¾åƒï¼Œé‡Šæ”¾å†…å­˜
 
         with open(os.path.join(self.work_dir, f"{type + '_' + x_label}_loss.csv"), 'w', newline='') as csvfile:
-            # ´´½¨Ò»¸öcsvĞ´ÈëÆ÷
+            # åˆ›å»ºä¸€ä¸ªcsvå†™å…¥å™¨
             writer = csv.writer(csvfile)
 
-            # Ğ´Èë±êÌâĞĞ
+            # å†™å…¥æ ‡é¢˜è¡Œ
             writer.writerow([x_label, type + ' Loss'])
 
-            # Ğ´ÈëË÷ÒıºÍËğÊ§Öµ
+            # å†™å…¥ç´¢å¼•å’ŒæŸå¤±å€¼
             for index, loss in enumerate(y):
                 writer.writerow([index, loss])
 

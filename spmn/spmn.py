@@ -40,7 +40,7 @@ class Spmn(nn.Module):
         :param M: 记忆（memory_deep， memory_width， memory_width）
         :return:
         """
-        self.M = self.M.to(x.device)
+        M = self.M.clone().to(x.device).detach()
 
         # （batch_size, memory_deep， memory_width， memory_width）
         # 更新门计算
@@ -51,10 +51,11 @@ class Spmn(nn.Module):
 
         # 候选隐藏状态
         u = self.mask_u(x)
-        _M = F.relu(self.M * a * u)
+        _M = F.relu(M * a * u)
 
         # 最终隐藏状态
-        self.M = (1 - r) * self.M + _M * r
+        M = (1 - r) * M + _M * r
+        self.M = M.clone()
 
         # 计算output
         # （batch_size, memory_deep， memory_width， memory_width） -> （batch_size， recall_num， 2 + output_dim）

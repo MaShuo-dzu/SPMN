@@ -16,7 +16,7 @@ M = torch.zeros(memory_deep, memory_width, memory_width).to(device)
 print(calculate_stats(M))
 
 # 模拟输入 （bs， 1024）
-batch_size = 4
+batch_size = 1
 input_dim = 2048
 input = torch.randn(batch_size, input_dim).to(device)
 

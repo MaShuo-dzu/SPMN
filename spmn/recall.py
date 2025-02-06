@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 import torch.nn.functional as F
 
@@ -16,41 +17,36 @@ class Recall(nn.Module):
         self.block_1 = nn.Sequential(
             nn.Conv2d(self.in_channel, self.in_channel * 4, 1),
             nn.BatchNorm2d(self.in_channel * 4),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
         # memory_width // 4
         self.block_2 = nn.Sequential(
             nn.Conv2d(self.in_channel * 4, self.in_channel * 8, 2, 2),
             nn.BatchNorm2d(self.in_channel * 8),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
         # memory_width // 8
         self.block_3 = nn.Sequential(
             nn.Conv2d(self.in_channel * 8, self.in_channel * 16, 2, 2),
             nn.BatchNorm2d(self.in_channel * 16),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
         # memory_width // 8
         self.block_4 = nn.Sequential(
             nn.Conv2d(self.in_channel * 16, self.out_channel, 2, 2),
             nn.BatchNorm2d(self.out_channel),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
         self.head = nn.Sequential(
             nn.Linear((memory_width // 8) ** 2, self.output_dim),
-            nn.ReLU(inplace=True)
+            nn.ReLU()
         )
 
     def forward(self, x):
-        """
-
-        :param x: [batch_size, memory_deep£¬ memory_width£¬ memory_width]
-        :return: [batch_size£¬ recall_num£¬ 2 + output_dim]
-        """
         bs = x.shape[0]
 
         x = self.block_1(x)
@@ -62,7 +58,10 @@ class Recall(nn.Module):
 
         x = self.head(x)
 
-        x[:, :, 0] = F.sigmoid(x[:, :, 0])  # p
-        x[:, :, 1] = F.sigmoid(x[:, :, 1])  # c
+        x = torch.cat([
+            F.sigmoid(x[:, :, 0:1]),  # p
+            F.sigmoid(x[:, :, 1:2]),  # c
+            x[:, :, 2:]
+        ], dim=2)
 
         return x
