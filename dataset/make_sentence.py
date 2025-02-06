@@ -33,11 +33,12 @@ for index in range(files):
 
     for i in tqdm(range(1, lines), desc=f"{index + 1} / {files}"):
         sentence = random_samples_index[i]
-        index = torch.Tensor(random_samples_index[:i])
+        index = torch.tensor(random_samples_index[:i])
         similarity = compute_cosine_similarity_matrix(
             random_samples[i],  # Tensor
-            torch.cat((random_samples[:i].tolist()), dim=0))  # array(Tensor)
+            torch.cat((random_samples[:i].tolist()), dim=0)  # array(Tensor)
+        )  # [1, num]
 
-        save.append(NpzData(sentence, similarity, index))
+        save.append(NpzData(sentence, similarity.squeeze(0), index))
 
     np.save(file_path, save)

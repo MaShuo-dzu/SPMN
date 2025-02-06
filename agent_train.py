@@ -1,6 +1,3 @@
-"""
-采用类似于目标检测的训练方式
-"""
 import csv
 import os
 import time
@@ -44,7 +41,7 @@ class AgentTrain(object):
 
         npz_dir = r"./dataset/sentence/100"
 
-        # 配置gpu
+        # 配置GPU
         use_cuda = torch.cuda.is_available()
         if use_cuda:
             torch.cuda.manual_seed(123)  # 为当前GPU设置随机种子

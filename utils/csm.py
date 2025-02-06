@@ -5,8 +5,7 @@ import torch.nn.functional as F
 def compute_cosine_similarity_matrix(compute_vector, vectors):
     compute_vector = compute_vector.unsqueeze(0)
 
-    cosine_similarity = F.cosine_similarity(compute_vector, vectors, dim=1)
-
+    cosine_similarity = F.cosine_similarity(compute_vector, vectors, dim=-1)
     return cosine_similarity
 
 

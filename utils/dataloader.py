@@ -70,15 +70,16 @@ class TextDataset(Dataset):
 
 
 class AgentTrainDataset(Dataset):
-    def __init__(self, npz_dir: str, dict_file_path: str, memory_threshold: float = 0.5):
+    def __init__(self, npz_dir: str, dict_file_path: str, memory_threshold: float = 0.2):
         assert os.path.isdir(npz_dir), f"[AgentTrainDataset error] 文件夹不存在：{npz_dir}"
         assert os.path.isfile(dict_file_path), f"[AgentTrainDataset error] 文件不存在：{dict_file_path}"
 
         # dict
         dict_data = np.load(dict_file_path, allow_pickle=True)
         dict_embeddings = dict_data['embeddings']
+        dict_embeddings = torch.cat(dict_embeddings.tolist(), dim=0)
 
-        npz_list = glob.glob(os.path.join(npz_dir, '*.npz'))
+        npz_list = glob.glob(os.path.join(npz_dir, '*.npy'))
         print(f"[AgentTrainDataset] npz 数量：{len(npz_list)}")
 
         self.scene = []
@@ -96,11 +97,16 @@ class AgentTrainDataset(Dataset):
                 similarity: Tensor = each_iter.similarity[c_pass]  # [real_num]
 
                 index: Tensor = each_iter.index[c_pass]  # [real_num]
-                embeddings: Tensor = dict_embeddings[index]  # [real_num, data_dim]
+
+                if len(index):
+                    embeddings = dict_embeddings[index]  # [real_num, data_dim]
+                else:
+                    embeddings = torch.Tensor([])
 
                 p: Tensor = linear_sequence[c_pass]  # [real_num]
 
-                train_iter = AgentTrainIter(dict_embeddings[each_iter.sentence], torch.cat((p.unsqueeze(-1), similarity.unsqueeze(-1), embeddings), dim=1))
+                target = torch.cat((p.unsqueeze(-1), similarity.unsqueeze(-1), embeddings), dim=1)
+                train_iter = AgentTrainIter(dict_embeddings[each_iter.sentence], target)
                 iter_list.append(train_iter)
 
             self.scene.append(iter_list)
