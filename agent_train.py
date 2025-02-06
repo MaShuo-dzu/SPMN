@@ -115,28 +115,28 @@ class AgentTrain(object):
 
         # 训练
         print("开始训练")
-        # try:
-        for epoch in range(1, self.epochs + 1):
-            self.train(epoch)
-        # except Exception as e:
-        #     print(f"训练过程中发生错误：{e}")
-        # finally:
-        #     # 清空使用过的gpu缓冲区
-        #     torch.cuda.empty_cache()
-        #
-        #     # 画图
-        #     self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
-        #                      y=self.train_epochs_loss, type="Train")
-        #     self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
-        #                      y=self.val_epochs_loss, type="Val")
-        #     self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
-        #                      y=self.train_all_batch_loss, type="Train")
-        #     self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
-        #                      y=self.val_all_batch_loss, type="Val")
-        #     self.plot_losses(x=len(self.lr_schedular), x_label="steps",
-        #                      y=self.lr_schedular, type="lr")
-        #
-        # print("训练完成!")
+        try:
+            for epoch in range(1, self.epochs + 1):
+                self.train(epoch)
+        except Exception as e:
+            print(f"训练过程中发生错误：{e}")
+        finally:
+            # 清空使用过的gpu缓冲区
+            torch.cuda.empty_cache()
+
+            # 画图
+            self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
+                             y=self.train_epochs_loss, type="Train")
+            self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
+                             y=self.val_epochs_loss, type="Val")
+            self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
+                             y=self.train_all_batch_loss, type="Train")
+            self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
+                             y=self.val_all_batch_loss, type="Val")
+            self.plot_losses(x=len(self.lr_schedular), x_label="steps",
+                             y=self.lr_schedular, type="lr")
+
+        print("训练完成!")
 
     def train(self, epoch):
         train_loss = []
@@ -161,10 +161,15 @@ class AgentTrain(object):
                     self.model.train()
                     self.optimizer.zero_grad()  # 模型参数梯度清零
 
+                    time_1 = time.time()
                     output = self.model(embedding)
+                    time_2 = time.time()
                     loss = self.criterion(output, target)
+                    time_3 = time.time()
 
                     loss.backward()
+                    time_4 = time.time()
+                    print(f"model cost: {time_2 - time_1}  loss cost: {time_3 - time_2}  backward cost: {time_4 - time_3}")
 
                     train_loss.append(loss.item())
                     self.train_all_batch_loss.append(loss.item())

@@ -66,7 +66,7 @@ class AgentTrainLoss(torch.nn.Module):
                 continue
 
             # 匹配
-            pred_indices, true_indices = hungarian_matching(o, t)
+            pred_indices, true_indices = hungarian_matching(o.detach().cpu(), t.detach().cpu())
             pred = o[pred_indices]
             true = t[true_indices]
 
@@ -85,7 +85,7 @@ class AgentTrainLoss(torch.nn.Module):
             loss_data = 1 - F.cosine_similarity(pred[:, 2:], true[:, 2:], dim=1)  # dim=1 表示沿着向量的维度计算
             loss_data = torch.sum(loss_data)
 
-            loss_list.append(loss_t.item() * self.p_rate + (loss_no_match.item() + loss_c.item()) * self.c_rate + loss_data.item() * self.d_rate)
+            loss_list.append(loss_t * self.p_rate + (loss_no_match + loss_c) * self.c_rate + loss_data * self.d_rate)
 
         loss = sum(loss_list) / len(loss_list)
 
