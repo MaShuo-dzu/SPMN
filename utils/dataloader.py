@@ -76,7 +76,6 @@ class AgentTrainDataset(Dataset):
 
         # dict
         dict_data = np.load(dict_file_path, allow_pickle=True)
-        dict_sentences = dict_data['sentences']
         dict_embeddings = dict_data['embeddings']
 
         npz_list = glob.glob(os.path.join(npz_dir, '*.npz'))

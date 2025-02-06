@@ -45,7 +45,7 @@ class AgentTrainLoss(torch.nn.Module):
         self.c_rate = c_rate
         self.d_rate = d_rate
 
-    def forward(self, output: list, target):
+    def forward(self, output: list, target: list):
         """
 
         :param output: [[search_num, output_dim]...]  len = bs 根据conf阈值筛选之后的输出
@@ -59,22 +59,34 @@ class AgentTrainLoss(torch.nn.Module):
             o = output[each_bs]  # [search_num, output_dim]
             t = target[each_bs]  # [real_num, output_dim]
 
+            # 处理无真实target
+            if not len(t):
+                loss_c = F.binary_cross_entropy(o[:, 1], torch.zeros_like(o[:, 1]), reduction='sum')
+                loss_list.append(self.c_rate * loss_c)
+                continue
+
             # 匹配
             pred_indices, true_indices = hungarian_matching(o, t)
             pred = o[pred_indices]
             true = t[true_indices]
 
+            loss_no_match = 0
+            if o.shape[0] < t.shape[0]:
+                true_no_match_indices = set(range(len(t))) - set(true_indices)
+                true_no_match = t[true_no_match_indices]
+
+                loss_no_match = F.binary_cross_entropy(true_no_match[:, 1], torch.zeros_like(true_no_match[:, 1]), reduction='sum')
+
             # 时间损失 (p)
-            loss_t = F.smooth_l1_loss(pred[:, 0], true[:, 0], reduction='mean', beta=1.0)
-            # 置信度损失
-            loss_c = F.smooth_l1_loss(pred[:, 1], true[:, 1], reduction='mean', beta=1.0)
-            # 内容损失 (data + conf)
+            loss_t = F.smooth_l1_loss(pred[:, 0], true[:, 0], reduction='sum', beta=1.0)
+            # 置信度损失 (conf)
+            loss_c = F.smooth_l1_loss(pred[:, 1], true[:, 1], reduction='sum', beta=1.0)
+            # 内容损失 data
             loss_data = 1 - F.cosine_similarity(pred[:, 2:], true[:, 2:], dim=1)  # dim=1 表示沿着向量的维度计算
             loss_data = torch.sum(loss_data)
 
-            loss_list.append(loss_t.item() * self.p_rate + loss_c.item() * self.c_rate + loss_data.item() * self.d_rate)
+            loss_list.append(loss_t.item() * self.p_rate + (loss_no_match.item() + loss_c.item()) * self.c_rate + loss_data.item() * self.d_rate)
 
         loss = sum(loss_list) / len(loss_list)
 
         return loss
-

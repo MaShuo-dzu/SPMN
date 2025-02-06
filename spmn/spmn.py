@@ -61,3 +61,6 @@ class Spmn(nn.Module):
         output = self.recall_block(_M)
 
         return output
+
+    def version(self):
+        return "0.0.1"
