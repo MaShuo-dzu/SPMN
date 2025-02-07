@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from torch import Tensor
 
 from utils.match import hungarian_matching
 
@@ -45,14 +46,14 @@ class AgentTrainLoss(torch.nn.Module):
         self.c_rate = c_rate
         self.d_rate = d_rate
 
-    def forward(self, output: list, target: list):
+    def forward(self, output: Tensor, target: list):
         """
 
-        :param output: [[search_num, output_dim]...]  len = bs 根据conf阈值筛选之后的输出
+        :param output: [bs, search_num, output_dim]
         :param target: [[real_num, output_dim]...] len = bs
         :return:
         """
-        bs = len(output)
+        bs = len(target)
 
         loss_list = []
         for each_bs in range(bs):
@@ -66,7 +67,7 @@ class AgentTrainLoss(torch.nn.Module):
                 continue
 
             # 匹配
-            pred_indices, true_indices = hungarian_matching(o.detach().cpu(), t.detach().cpu())
+            pred_indices, true_indices = hungarian_matching(o, t)
             pred = o[pred_indices]
             true = t[true_indices]
 

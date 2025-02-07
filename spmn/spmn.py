@@ -22,13 +22,10 @@ class Spmn(nn.Module):
 
         self.recall_block = Recall(memory_width, memory_deep, recall_num, output_dim)
 
-        self.M = self.init_M()
+        self.M = None
 
-    def init_M(self):
-        return torch.zeros(self.memory_deep,self. memory_width, self.memory_width)
-
-    def reset_M(self):
-        self.M = torch.zeros(self.memory_deep,self. memory_width, self.memory_width)
+    def init_M(self, batch_num):
+        self.M = torch.zeros(batch_num, self.memory_deep,self. memory_width, self.memory_width)
 
     def get_M(self):
         return self.M
@@ -37,9 +34,10 @@ class Spmn(nn.Module):
         """
 
         :param x: 输入特征（batch_size, input_dim）
-        :param M: 记忆（memory_deep， memory_width， memory_width）
         :return:
         """
+        assert self.M is not None, "请在运行模型之前初始化M"
+
         M = self.M.clone().to(x.device).detach()
 
         # （batch_size, memory_deep， memory_width， memory_width）
