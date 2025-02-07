@@ -30,6 +30,7 @@ print("模型参数量/训练参数量： ", count_parameters(model))
 
 start_time = time.time()
 # 前向传播
+model.init_M(batch_size)
 output = model(input)
 M = model.get_M()
 print(f"M shape: {M.shape}")
