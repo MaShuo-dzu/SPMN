@@ -106,7 +106,7 @@ class AgentTrainDataset(Dataset):
                 p: Tensor = linear_sequence[c_pass]  # [real_num]
 
                 target = torch.cat((p.unsqueeze(-1), similarity.unsqueeze(-1), embeddings), dim=1)
-                train_iter = AgentTrainIter(dict_embeddings[each_iter.sentence].unsqueeze(0), target.unsqueeze(0))
+                train_iter = AgentTrainIter(dict_embeddings[each_iter.sentence].unsqueeze(0), target)
                 iter_list.append(train_iter)
 
             self.scene.append(iter_list)

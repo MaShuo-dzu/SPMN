@@ -9,15 +9,36 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 from matplotlib import pyplot as plt
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from spmn.spmn import Spmn
+from utils.data import AgentTrainLoaderData
 from utils.tools import count_parameters, save_arg, make_workdir
 from utils.dataloader import AgentTrainDataset
 from utils.loss import AgentTrainLoss
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 torch.autograd.set_detect_anomaly(True)
+
+
+def custom_collate_fn(batch):
+    batchs = []
+
+    for col in zip(*batch):
+        embeddings = []
+        targets = []
+        for j in range(len(batch)):  # batch size
+            embedding = col[j].embedding
+            target = col[j].target
+
+            embeddings.append(embedding)
+            targets.append(target)
+
+        atld = AgentTrainLoaderData(torch.cat(embeddings, dim=0), targets)
+        batchs.append(atld)
+
+    return batchs, len(batch)
 
 
 class AgentTrain(object):
@@ -30,6 +51,7 @@ class AgentTrain(object):
         self.conf_threshold = 0.5
 
         self.epochs = 100
+        self.batch_size = 2
         self.work_dir = r"AgentTrain-run"
         self.lr = 0.0005
 
@@ -50,7 +72,10 @@ class AgentTrain(object):
         self.device = torch.device("cuda" if use_cuda else "cpu")
 
         # 初始化数据集
-        self.dataset = AgentTrainDataset(npz_dir, r"./dataset\sentences_with_embeddings.npz")
+        dataset = AgentTrainDataset(npz_dir, r"./dataset\sentences_with_embeddings.npz")
+
+        train_kwargs = {'num_workers': 0, 'pin_memory': True} if use_cuda else {}
+        self.dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=custom_collate_fn, **train_kwargs)
 
         # 选择模型
         self.model = Spmn(memory_width=self.memory_width, memory_deep=self.memory_deep,
@@ -62,7 +87,7 @@ class AgentTrain(object):
         print("模型参数量/训练参数量： ", count_parameters(self.model))
 
         # 制作训练集批次
-        self.batch_num = len(self.dataset)
+        self.batch_num = len(self.dataloader)
 
         self.train_batch_num = round(self.batch_num * 0.8)
 
@@ -104,7 +129,7 @@ class AgentTrain(object):
                 "input_dim": self.input_dim,
                 "lr": self.lr,
                 "epochs": self.epochs,
-                "batch-size": 1,
+                "batch-size": self.batch_size,
                 "optimizer": str(self.optimizer),
                 "gpus": torch.cuda.device_count(),
                 "data-file": npz_dir,
@@ -116,11 +141,11 @@ class AgentTrain(object):
 
         # 训练
         print("开始训练")
-        try:
-            for epoch in range(1, self.epochs + 1):
-                self.train(epoch)
-        except Exception as e:
-            print(f"训练过程中发生错误：{e}")
+        # try:
+        for epoch in range(1, self.epochs + 1):
+            self.train(epoch)
+        # except Exception as e:
+        #     print(f"训练过程中发生错误：{e}")
 
         # 清空使用过的gpu缓冲区
         torch.cuda.empty_cache()
@@ -144,18 +169,18 @@ class AgentTrain(object):
         val_loss = []
 
         # 迭代器
-        pbar = tqdm([i for i in self.dataset],
+        pbar = tqdm(self.dataloader,
                     desc=f'Epoch {epoch} / {self.epochs}')
 
-        for step, scene in enumerate(pbar):
+        for step, (batchs, batch_num) in enumerate(pbar):
             try:
-                self.model.reset_M()
+                self.model.init_M(batch_num)
             except:  # ddp
-                self.model.module.reset_M()
+                self.model.module.init_M(batch_num)
 
-            for train_iter in scene:
-                embedding = train_iter.embedding.to(self.device)
-                target = train_iter.target.to(self.device)
+            for train_iter in batchs:
+                embedding = train_iter.embedding.to(self.device)  # tensor
+                target = train_iter.target  # list
 
                 if step < self.train_batch_num:
                     # train
@@ -163,7 +188,7 @@ class AgentTrain(object):
                     self.optimizer.zero_grad()  # 模型参数梯度清零
 
                     output = self.model(embedding)
-                    loss = self.criterion(output, target)
+                    loss = self.criterion(output.cpu(), target)
 
                     loss.backward()
 
@@ -181,7 +206,7 @@ class AgentTrain(object):
 
                     with torch.no_grad():
                         output = self.model(embedding)
-                        loss = self.criterion(output, target)
+                        loss = self.criterion(output.cpu(), target)
 
                     val_loss.append(loss.item())
                     self.val_all_batch_loss.append(loss.item())

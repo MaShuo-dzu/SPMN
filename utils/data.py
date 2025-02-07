@@ -2,6 +2,15 @@ import numpy as np
 from torch import Tensor
 
 
+class AgentTrainLoaderData:
+    embedding: Tensor
+    target: list
+
+    def __init__(self, embedding, target):
+        self.embedding = embedding
+        self.target = target
+
+
 class AgentTrainIter:
     embedding: Tensor
     target: Tensor
