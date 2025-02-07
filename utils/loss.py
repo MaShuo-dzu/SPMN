@@ -61,7 +61,7 @@ class AgentTrainLoss(torch.nn.Module):
 
             # 处理无真实target
             if not len(t):
-                loss_c = F.binary_cross_entropy(o[:, 1], torch.zeros_like(o[:, 1]), reduction='sum')
+                loss_c = F.smooth_l1_loss(o[:, 1], torch.zeros_like(o[:, 1]), reduction='sum')
                 loss_list.append(self.c_rate * loss_c)
                 continue
 
@@ -72,15 +72,19 @@ class AgentTrainLoss(torch.nn.Module):
 
             loss_no_match = 0
             if o.shape[0] < t.shape[0]:
-                true_no_match_indices = set(range(len(t))) - set(true_indices)
+                true_no_match_indices = list(set(range(len(t))) - set(true_indices))
                 true_no_match = t[true_no_match_indices]
 
-                loss_no_match = F.binary_cross_entropy(true_no_match[:, 1], torch.zeros_like(true_no_match[:, 1]), reduction='sum')
+                loss_no_match = F.smooth_l1_loss(true_no_match[:, 1], torch.zeros_like(true_no_match[:, 1]), reduction='sum')
 
             # 时间损失 (p)
             loss_t = F.smooth_l1_loss(pred[:, 0], true[:, 0], reduction='sum', beta=1.0)
             # 置信度损失 (conf)
-            loss_c = F.smooth_l1_loss(pred[:, 1], true[:, 1], reduction='sum', beta=1.0)
+            pred_no_match_indices = list(set(range(len(o))) - set(pred_indices))
+            pred_no_match = o[pred_no_match_indices]
+            loss_c_pos = F.smooth_l1_loss(pred[:, 1], true[:, 1], reduction='sum', beta=1.0)
+            loss_c_neg = F.smooth_l1_loss(pred_no_match[:, 1], torch.zeros_like(pred_no_match[:, 1]), reduction='sum', beta=1.0)
+            loss_c = loss_c_pos + loss_c_neg
             # 内容损失 data
             loss_data = 1 - F.cosine_similarity(pred[:, 2:], true[:, 2:], dim=1)  # dim=1 表示沿着向量的维度计算
             loss_data = torch.sum(loss_data)
@@ -88,5 +92,4 @@ class AgentTrainLoss(torch.nn.Module):
             loss_list.append(loss_t * self.p_rate + (loss_no_match + loss_c) * self.c_rate + loss_data * self.d_rate)
 
         loss = sum(loss_list) / len(loss_list)
-
         return loss

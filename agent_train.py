@@ -58,6 +58,7 @@ class AgentTrain(object):
                           output_dim=self.input_dim
                           ).to(device=self.device)
         print(self.model)
+        self.model_version = self.model.version()
         print("模型参数量/训练参数量： ", count_parameters(self.model))
 
         # 制作训练集批次
@@ -97,7 +98,7 @@ class AgentTrain(object):
             {
                 "time": time.strftime("%Y%m%d-%H%M%S"),
                 "author": "MaShuo",
-                "model-vision": self.model.version(),
+                "model-vision": self.model_version,
                 "memory_width": self.memory_width,
                 "memory_deep": self.memory_deep,
                 "input_dim": self.input_dim,
@@ -120,21 +121,21 @@ class AgentTrain(object):
                 self.train(epoch)
         except Exception as e:
             print(f"训练过程中发生错误：{e}")
-        finally:
-            # 清空使用过的gpu缓冲区
-            torch.cuda.empty_cache()
 
-            # 画图
-            self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
-                             y=self.train_epochs_loss, type="Train")
-            self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
-                             y=self.val_epochs_loss, type="Val")
-            self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
-                             y=self.train_all_batch_loss, type="Train")
-            self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
-                             y=self.val_all_batch_loss, type="Val")
-            self.plot_losses(x=len(self.lr_schedular), x_label="steps",
-                             y=self.lr_schedular, type="lr")
+        # 清空使用过的gpu缓冲区
+        torch.cuda.empty_cache()
+
+        # 画图
+        self.plot_losses(x=len(self.train_epochs_loss), x_label="epochs",
+                         y=self.train_epochs_loss, type="Train")
+        self.plot_losses(x=len(self.val_epochs_loss), x_label="epochs",
+                         y=self.val_epochs_loss, type="Val")
+        self.plot_losses(x=len(self.train_all_batch_loss), x_label="items",
+                         y=self.train_all_batch_loss, type="Train")
+        self.plot_losses(x=len(self.val_all_batch_loss), x_label="items",
+                         y=self.val_all_batch_loss, type="Val")
+        self.plot_losses(x=len(self.lr_schedular), x_label="steps",
+                         y=self.lr_schedular, type="lr")
 
         print("训练完成!")
 
@@ -153,23 +154,18 @@ class AgentTrain(object):
                 self.model.module.reset_M()
 
             for train_iter in scene:
-                embedding = train_iter.embedding
-                target = train_iter.target
+                embedding = train_iter.embedding.to(self.device)
+                target = train_iter.target.to(self.device)
 
                 if step < self.train_batch_num:
                     # train
                     self.model.train()
                     self.optimizer.zero_grad()  # 模型参数梯度清零
 
-                    time_1 = time.time()
                     output = self.model(embedding)
-                    time_2 = time.time()
                     loss = self.criterion(output, target)
-                    time_3 = time.time()
 
                     loss.backward()
-                    time_4 = time.time()
-                    print(f"model cost: {time_2 - time_1}  loss cost: {time_3 - time_2}  backward cost: {time_4 - time_3}")
 
                     train_loss.append(loss.item())
                     self.train_all_batch_loss.append(loss.item())
