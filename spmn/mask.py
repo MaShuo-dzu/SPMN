@@ -6,7 +6,7 @@ from spmn.encoder import TextEncoder, ImgEncoder
 
 
 class Mask(nn.Module):
-    def __init__(self, memory_width: int, memory_deep: int, input_dim: int):
+    def  __init__(self, memory_width: int, memory_deep: int, input_dim: int):
         super(Mask, self).__init__()
 
         assert memory_width / 8 == int(memory_width / 8), "memory_width 必须是8的倍数 ！"

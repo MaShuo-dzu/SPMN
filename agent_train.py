@@ -101,7 +101,7 @@ class AgentTrain(object):
         选择优化器
         学习率变化选择
         '''
-        # 交叉熵损失
+        # 损失
         self.criterion = AgentTrainLoss()
         # 随机梯度下降
         self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr)

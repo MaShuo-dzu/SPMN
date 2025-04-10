@@ -33,12 +33,10 @@ class Spmn(nn.Module):
     def forward(self, x):
         """
 
-        :param x: 输入特征（batch_size, input_dim）
+        :param x: 输入特征（batch_size, seq_len, input_dim）
         :return:
         """
         assert self.M is not None, "请在运行模型之前初始化M"
-
-        M = self.M.clone().to(x.device).detach()
 
         # （batch_size, memory_deep， memory_width， memory_width）
         # 更新门计算
@@ -49,17 +47,17 @@ class Spmn(nn.Module):
 
         # 候选隐藏状态
         u = self.mask_u(x)
-        _M = F.relu(M * a * u)
+        _M = F.relu(self.M * a * u)
 
         # 最终隐藏状态
-        M = (1 - r) * M + _M * r
-        self.M = M.clone()
+        self.M = (1 - r) * self.M + _M * r
+        self.M.detach()
 
         # 计算output
-        # （batch_size, memory_deep， memory_width， memory_width） -> （batch_size， recall_num， 2 + output_dim）
+        # (bs, memory_deep, memory_width, memory_width) -> [(bs, recall_num, 2) , (bs, recall_num, seq_len, output_dim)]
         output = self.recall_block(_M)
 
         return output
 
     def version(self):
-        return "0.0.1"
+        return "0.0.2"

@@ -75,9 +75,8 @@ class WriteTrain(object):
         self.dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=self.shuffle, **train_kwargs)
 
         # 选择模型
-        self.model = Spmn(memory_width=memory_width, memory_deep=memory_deep,
-                          input_seq_len=seq_len,
-                          # input_img_dim=512
+        self.model = Spmn(memory_width=self.memory_width, memory_deep=self.memory_deep,
+                          input_dim=self.input_dim
                           ).to(device=self.device)
         print(self.model)
         print("模型参数量/训练参数量： ", count_parameters(self.model))
@@ -127,8 +126,8 @@ class WriteTrain(object):
                 "time": time.strftime("%Y%m%d-%H%M%S"),
                 "author": "MaShuo",
                 "model-vision": "0.0.1",
-                "memory_width": memory_width,
-                "memory_deep": memory_deep,
+                "memory_width": self.memory_width,
+                "memory_deep": self.memory_deep,
                 "seq_len": seq_len,
                 "lr": self.lr,
                 "epochs": self.epochs,
