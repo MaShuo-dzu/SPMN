@@ -6,7 +6,7 @@ from transformers import BertModel, BertConfig
 
 
 class TextAttentionModel(nn.Module):
-    def __init__(self, text_encoder, hidden_dim):
+    def __init__(self, text_encoder):
         super().__init__()
         self.text_encoder = text_encoder
 
@@ -21,7 +21,7 @@ class TextAttentionModel(nn.Module):
 if __name__ == "__main__":
     # 构造模型
     text_encoder = BertModel(BertConfig())
-    model = TextAttentionModel(text_encoder=text_encoder, hidden_dim=768)
+    model = TextAttentionModel(text_encoder=text_encoder)
 
     # 构造随机输入
     batch_size = 2
