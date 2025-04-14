@@ -10,21 +10,20 @@ class SPMNWriteLoss(torch.nn.Module):
         super(SPMNWriteLoss, self).__init__()
 
     def forward(self, M, M0, sentence_embedding):
+        """
+        M: 记忆之后的M [deep, width, width]
+        M0: 记忆之前的M [deep, width, width]
+        sentence_embedding: [batch_size, seq_len, hidden_dim]
+        """
         _M = M - M0
 
         loss = self.count_loss(_M, sentence_embedding)
 
         return loss
 
-    def count_loss(self, input, sentence_embedding):
-        bs = input.size(0)
-        input_flat = input.view(bs, -1)
-        input_flat = F.normalize(input_flat, p=2, dim=1)
-        sentence_embedding_flat = sentence_embedding[:, 0]
-        sentence_embedding_flat = F.normalize(sentence_embedding_flat, p=2, dim=1)
+    def count_loss(self, dM, sentence_embedding):
+        bs = sentence_embedding.shape[0]
 
-        similarities1 = torch.matmul(input_flat, input_flat.T)
-        similarities2 = torch.matmul(sentence_embedding_flat, sentence_embedding_flat.T)
 
         # 计算相似度比值
         similarity_ratios = similarities1 / similarities2

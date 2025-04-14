@@ -1,9 +1,11 @@
+# encoding=utf-8
+
 import torch
 from torch import nn
 
 
 class CrossModalAttention(nn.Module):
-    """¿çÄ£Ì¬×¢ÒâÁ¦²ã£¨Í¼Ïñ¡úÎÄ±¾£©"""
+    """è·¨æ¨¡æ€æ³¨æ„åŠ›å±‚ï¼ˆx2â†’x1ï¼‰"""
 
     def __init__(self, dim):
         super().__init__()

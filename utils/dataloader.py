@@ -51,7 +51,7 @@ class TextDataset(Dataset):
         with open(file_path, 'r', encoding='utf-8') as file:
             self.sentences = file.readlines()
         # 去除每行末尾的换行符
-        self.sentences = [sentence.strip() for sentence in self.sentences[:500000]]
+        self.sentences = [sentence.strip() for sentence in self.sentences]
 
     def __len__(self):
         """

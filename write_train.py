@@ -24,7 +24,7 @@ class WriteTrain(object):
 
         self.memory_width = 256
         self.memory_deep = 10
-        self.seq_len = 36
+        self.input_dim = 768
 
         self.epochs = 1
         self.work_dir = r"run"
@@ -43,11 +43,6 @@ class WriteTrain(object):
         if not os.path.exists(os.path.join(self.work_dir, "weights")):
             os.mkdir(os.path.join(self.work_dir, "weights"))
 
-        csv_files = [r'G:\ms\SPMN\dataset\corpus_0_1000.csv',
-                     r'G:\ms\SPMN\dataset\corpus_1000_2000.csv',
-                     r"G:\ms\SPMN\dataset\corpus_2000_3000.csv",
-                     r"G:\ms\SPMN\dataset\corpus_3000_4000.csv",
-                     r"G:\ms\SPMN\dataset\corpus_4000_5000.csv"]
         txt_file = r"G:\ms\SPMN\dataset\corpus_clean.txt"
 
         # 配置gpu
@@ -68,7 +63,6 @@ class WriteTrain(object):
         这样将内存的Tensor转义到GPU的显存就会更快一些。'''
 
         # 初始化数据集
-        # dataset = CSVTextCosineSimilarityDataset(csv_files)
         dataset = TextDataset(txt_file)
 
         # 加载训练集和验证集
@@ -125,10 +119,10 @@ class WriteTrain(object):
             {
                 "time": time.strftime("%Y%m%d-%H%M%S"),
                 "author": "MaShuo",
-                "model-vision": "0.0.1",
+                "model-vision": self.model.version(),
                 "memory_width": self.memory_width,
                 "memory_deep": self.memory_deep,
-                "seq_len": seq_len,
+                "input_dim": self.input_dim,
                 "lr": self.lr,
                 "epochs": self.epochs,
                 "batch-size": self.batch_size,
@@ -177,6 +171,7 @@ class WriteTrain(object):
         for step, sentence in enumerate(pbar):
             sentence_embedding = embedding_text_512_77(sentence, seq_len=self.seq_len).to(self.device)
 
+            # write_train 使用随机生成的记忆体M
             M0 = torch.randn(self.memory_deep, self.memory_width, self.memory_width).to(self.device)
 
             if step < self.train_batch_num:
@@ -184,7 +179,7 @@ class WriteTrain(object):
                 self.model.train()
                 self.optimizer.zero_grad()  # 模型参数梯度清零
 
-                M, _ = self.model(sentence_embedding, M0.repeat(torch.cuda.device_count(), 1, 1, 1))
+                _, _, M = self.model(sentence_embedding, M0)
                 loss = self.criterion(M, M0, sentence_embedding)
 
                 loss.backward()

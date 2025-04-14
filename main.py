@@ -1,41 +1,50 @@
+# encoding=utf-8
+import time
+
 import torch
 
 from spmn.spmn import Spmn
-from utils.tools import calculate_stats, count_parameters
+from utils.tools import count_parameters
 
-import time
+if __name__ == '__main__':
+    # 设置超参数
+    batch_size = 20
+    seq_len = 10
+    input_dim = 768
+    memory_deep = 5
+    memory_width = 224
+    recall_num = 500
+    output_dim = 768
 
-# print(torch.__version__)
+    # 创建模型实例
+    model = Spmn(
+        memory_deep=memory_deep,
+        memory_width=memory_width,
+        recall_num=recall_num,
+        input_dim=input_dim,
+        output_dim=output_dim
+    )
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(count_parameters(model))
 
-# 创建记忆张量 （10, 256, 256）
-memory_deep = 10
-memory_width = 512
-M = torch.zeros(memory_deep, memory_width, memory_width).to(device)
-print(calculate_stats(M))
+    # 创建输入张量
+    x = torch.randn(batch_size, seq_len, input_dim)  # 输入特征
 
-# 模拟输入 （bs， 1024）
-batch_size = 1
-input_dim = 2048
-input = torch.randn(batch_size, input_dim).to(device)
+    # 创建记忆矩阵 M
+    M = torch.randn(memory_deep, memory_width, memory_width)
 
-model = Spmn(memory_width=memory_width, memory_deep=memory_deep, input_dim=input_dim
-             ).to(device)
+    # 前向传播
+    start_time = time.time()
+    time_out, data_out, updated_M = model(x, M)
+    end_time = time.time()
+    print("cost time: ", end_time - start_time)
 
-if torch.cuda.is_available():
-    model = torch.nn.DataParallel(model, device_ids=range(torch.cuda.device_count()))
+    # 验证输出形状
+    assert time_out.shape == (batch_size, recall_num,
+                              2), f"Time output shape mismatch. Expected: {(batch_size, recall_num, 2)}, Got: {time_out.shape}"
+    assert data_out.shape == (batch_size, recall_num,
+                              output_dim), f"Data output shape mismatch. Expected: {(batch_size, recall_num, output_dim)}, Got: {data_out.shape}"
+    assert updated_M.shape == (memory_deep, memory_width,
+                               memory_width), f"Memory shape mismatch. Expected: {(memory_deep, memory_width, memory_width)}, Got: {updated_M.shape}"
 
-print("模型参数量/训练参数量： ", count_parameters(model))
-
-start_time = time.time()
-# 前向传播
-model.init_M(batch_size)
-output = model(input)
-M = model.get_M()
-print(f"M shape: {M.shape}")
-print(f"o shape: {output.shape}")
-print(calculate_stats(M))
-
-end_time = time.time()
-print("cost time: ", end_time - start_time)
+    print("Test passed! All output shapes are correct.")
