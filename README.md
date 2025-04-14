@@ -41,7 +41,7 @@ Drawing inspiration from the memory functions of the human brain and integrating
 
 描述：最初版本，由纯神经网络组成（卷积网络+全连接网络），类似于LSTM网络结构。
 
-![image-20250408171234128](.\img\image-20250408171234128.png)
+![image-20250408171234128](https://github.com/MaShuo-dzu/SPMN/tree/v0.0.1/img/image-20250408171234128.png)
 
 #### V-0.0.2
 
