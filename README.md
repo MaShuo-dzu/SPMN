@@ -49,7 +49,7 @@ Drawing inspiration from the memory functions of the human brain and integrating
 
 模型整体架构：
 
-![image-20250410161915110](img\image-20250410160039564.png)
+![image-20250410161915110](.\img\image-20250410160039564.png)
 
 
 
