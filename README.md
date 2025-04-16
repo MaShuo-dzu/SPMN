@@ -193,6 +193,10 @@ SPMN网络的输出结果分为两部分，分别为在时间上的预测关系�
 
 [[1410.3916\] Memory Networks](https://arxiv.org/abs/1410.3916)
 
+**Advances and Challenges in Foundation Agents**
+
+[Advances and Challenges in Foundation Agents](https://arxiv.org/pdf/2504.01990)
+
 
 
 ## 备忘录
