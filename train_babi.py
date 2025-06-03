@@ -2,6 +2,8 @@ import argparse
 import json
 
 import torch
+from torch import optim
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
@@ -12,6 +14,7 @@ from other_model.entnet import EntNet
 from spmn.spmn import Spmn
 
 from utils.dataloader import BabiDataset
+from utils.tools import count_model_params, count_trainable_params
 
 
 def set_seed(seed=42):
@@ -159,14 +162,24 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_dataset, batch_size=param_dict["batch_size"], shuffle=False)
 
     # 2. 初始化模型
-    model = EntNet(len(train_dataset.word2idx), memory_slots=20, emb_size=100,
+    model = EntNet(len(train_dataset.word2idx), memory_slots=param_dict["memory_slots"], emb_size=param_dict["emb_size"],
                    bow_encoding=False,
                    max_sentence_length=max(train_dataset.max_story_len, train_dataset.max_question_len),
-                   gate_penalty=0.0).to(device)
+                   gate_penalty=param_dict["gate_penalty"]).to(device)
+    print(model)
+    model_params = count_model_params(model)
+    trainable_params = count_trainable_params(model)
+    print("model_params", model_params)
+    print("trainable_params", trainable_params)
 
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=param_dict["lr"])
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    optimizer = optim.AdamW(model.parameters(), lr=param_dict["lr"],
+                            weight_decay=param_dict["weight_decay"])
+    scheduler = CosineAnnealingLR(
+        optimizer,
+        T_max=param_dict["epochs"],
+        eta_min=param_dict["eta_min"]
+    )
 
     best_val_loss = float('inf')
     num_epochs = param_dict["epochs"]

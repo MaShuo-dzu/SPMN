@@ -1,9 +1,15 @@
 {
+  "name": "entnet",
   "work_dir": "sci_noT_split-train-DNTMNorm-Aup-1",
   "babi_dir": "dataset/babi",
+  "memory_slots": 20,
+  "emb_size": 100,
+  "gate_penalty": 0.0,
   "task_id": 1,
   "epochs": 30,
   "batch_size": 32,
   "lr": 0.0001,
+  "weight_decay": 0.0002,
+  "eta_min": 0.000001,
   "seed": 42
 }
