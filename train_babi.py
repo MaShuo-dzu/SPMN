@@ -6,7 +6,10 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt  # 新增：用于绘制损失图
+import matplotlib.pyplot as plt
+
+from other_model.entnet import EntNet
+from spmn.spmn import Spmn
 
 from utils.dataloader import BabiDataset
 
@@ -49,11 +52,8 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
     all_preds = torch.cat(all_preds).numpy()
     all_labels = torch.cat(all_labels).numpy()
     acc = accuracy_score(all_labels, all_preds)
-    p = precision_score(all_labels, all_preds, average='macro', zero_division=0)
-    r = recall_score(all_labels, all_preds, average='macro', zero_division=0)
-    f1 = f1_score(all_labels, all_preds, average='macro', zero_division=0)
 
-    return avg_loss, acc, p, r, f1
+    return avg_loss, acc
 
 
 def validate_epoch(model, dataloader, criterion, device):
@@ -159,9 +159,10 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_dataset, batch_size=param_dict["batch_size"], shuffle=False)
 
     # 2. 初始化模型
-    model = YourMemoryNetworkModel(vocab_size=len(train_dataset.word2idx),
-                                   story_len=train_dataset.max_story_len,
-                                   question_len=train_dataset.max_question_len).to(device)
+    model = EntNet(len(train_dataset.word2idx), memory_slots=20, emb_size=100,
+                   bow_encoding=False,
+                   max_sentence_length=max(train_dataset.max_story_len, train_dataset.max_question_len),
+                   gate_penalty=0.0).to(device)
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=param_dict["lr"])
@@ -178,7 +179,7 @@ if __name__ == "__main__":
 
     for epoch in tqdm(range(1, num_epochs + 1), desc="Training Progress"):
         # 训练一个epoch
-        train_loss, train_acc, train_p, train_r, train_f1 = train_epoch(
+        train_loss, train_acc = train_epoch(
             model, train_loader, criterion, optimizer, device
         )
 
@@ -198,7 +199,7 @@ if __name__ == "__main__":
 
         tqdm.write(f"Epoch {epoch}:")
         tqdm.write(
-            f"  Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}, P: {train_p:.4f}, R: {train_r:.4f}, F1: {train_f1:.4f}"
+            f"  Train Loss: {train_loss:.4f}, Acc: {train_acc:.4f}"
         )
         tqdm.write(
             f"  Val   Loss: {val_loss:.4f}, Acc: {val_acc:.4f}, P: {val_p:.4f}, R: {val_r:.4f}, F1: {val_f1:.4f}"
