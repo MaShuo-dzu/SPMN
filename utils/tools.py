@@ -7,6 +7,31 @@ from torch import nn
 import json
 
 
+def count_model_params(model):
+    """
+    计算 PyTorch 模型的参数总量
+
+    Args:
+        model: 一个 PyTorch 模型
+
+    Returns:
+        int: 模型的参数总量（可训练和不可训练参数之和）
+    """
+    return sum(param.numel() for param in model.parameters())
+
+def count_trainable_params(model):
+    """
+    计算 PyTorch 模型的可训练参数量
+
+    Args:
+        model: 一个 PyTorch 模型
+
+    Returns:
+        int: 模型的可训练参数量
+    """
+    return sum(param.numel() for param in model.parameters() if param.requires_grad)
+
+
 def save_arg(data_dict: dict, path: str):
     filename = 'arg.json'
 

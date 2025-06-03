@@ -1,0 +1,9 @@
+{
+  "work_dir": "sci_noT_split-train-DNTMNorm-Aup-1",
+  "babi_dir": "dataset/babi",
+  "task_id": 1,
+  "epochs": 30,
+  "batch_size": 32,
+  "lr": 0.0001,
+  "seed": 42
+}

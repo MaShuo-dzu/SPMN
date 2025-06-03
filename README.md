@@ -51,6 +51,12 @@ Drawing inspiration from the memory functions of the human brain and integrating
 
 ![image-20250410161915110](.\img\image-20250410160039564.png)
 
+#### V-0.0.3
+
+描述：SPMN 脉冲神经网络版本优化，引入海马体以及大脑皮层功能建模。
+
+
+
 
 
 ### 模型训练
